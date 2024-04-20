@@ -1,0 +1,119 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "metadata": {
+      "_generator": {
+        "name": "json",
+        "version": "0.22.6.54827",
+        "templateHash": "17110451938184928271"
+      }
+    },
+    "parameters": {
+      "redisCacheName": {
+        "type": "string",
+        "metadata": {
+          "description": "Specify the name of the Azure Redis Cache to create."
+        }
+      },
+      "location": {
+        "type": "string",
+        "metadata": {
+          "description": "Location of all resources"
+        }
+      },
+      "redisCacheSKU": {
+        "type": "string",
+        "allowedValues": [
+          "Basic",
+          "Standard",
+          "Premium"
+        ],
+        "metadata": {
+          "description": "Specify the pricing tier of the new Azure Redis Cache."
+        }
+      },
+      "redisCacheFamily": {
+        "type": "string",
+        "allowedValues": [
+          "C",
+          "P"
+        ],
+        "metadata": {
+          "description": "Specify the family for the sku. C = Basic/Standard, P = Premium."
+        }
+      },
+      "redisCacheCapacity": {
+        "type": "int",
+        "allowedValues": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "metadata": {
+          "description": "Specify the size of the new Azure Redis Cache instance. Valid values: for C (Basic/Standard) family (0, 1, 2, 3, 4, 5, 6), for P (Premium) family (1, 2, 3, 4, 5)"
+        }
+      },
+    "resources": [
+      {
+        "type": "Microsoft.Cache/redis",
+        "apiVersion": "2023-08-01",
+        "name": "[parameters('redisCacheName')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          "enableNonSslPort": false,
+          "minimumTlsVersion": "1.2",
+          "sku": {
+            "capacity": "[parameters('redisCacheCapacity')]",
+            "family": "[parameters('redisCacheFamily')]",
+            "name": "[parameters('redisCacheSKU')]"
+          },
+          "redisConfiguration": {
+            "aad-enabled": "true"
+          }
+        }
+      },
+      {
+        "type": "Microsoft.Cache/redis/accessPolicyAssignments",
+        "apiVersion": "2023-08-01",
+        "name": "[format('{0}/{1}', parameters('redisCacheName'), parameters('builtInAccessPolicyAssignmentName'))]",
+        "properties": {
+          "accessPolicyName": "[parameters('builtInAccessPolicyName')]",
+          "objectId": "[parameters('builtInAccessPolicyAssignmentObjectId')]",
+          "objectIdAlias": "[parameters('builtInAccessPolicyAssignmentObjectAlias')]"
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.Cache/redis', parameters('redisCacheName'))]"
+        ]
+      },
+      {
+        "type": "Microsoft.Cache/redis/accessPolicies",
+        "apiVersion": "2023-08-01",
+        "name": "[format('{0}/{1}', parameters('redisCacheName'), parameters('customAccessPolicyName'))]",
+        "properties": {
+          "permissions": "[parameters('customAccessPolicyPermissions')]"
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.Cache/redis', parameters('redisCacheName'))]",
+          "[resourceId('Microsoft.Cache/redis/accessPolicyAssignments', parameters('redisCacheName'), parameters('builtInAccessPolicyAssignmentName'))]"
+        ]
+      },
+      {
+        "type": "Microsoft.Cache/redis/accessPolicyAssignments",
+        "apiVersion": "2023-08-01",
+        "name": "[format('{0}/{1}', parameters('redisCacheName'), parameters('customAccessPolicyAssignmentName'))]",
+        "properties": {
+          "accessPolicyName": "[parameters('customAccessPolicyName')]",
+          "objectId": "[parameters('customAccessPolicyAssignmentObjectId')]",
+          "objectIdAlias": "[parameters('customAccessPolicyAssignmentObjectAlias')]"
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.Cache/redis', parameters('redisCacheName'))]",
+          "[resourceId('Microsoft.Cache/redis/accessPolicies', parameters('redisCacheName'), parameters('customAccessPolicyName'))]"
+        ]
+      }
+    ]
+  }
